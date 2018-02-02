@@ -4,7 +4,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.dzungvu.activities.SongListActivity">
+    tools:context="com.dzungvu.activities.SongListActivity"
+    android:orientation="vertical">
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/edt_playlist_name"
+        android:padding="10dp"
+        android:hint="@string/playlist_name"/>
 
     <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"

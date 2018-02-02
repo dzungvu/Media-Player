@@ -11,6 +11,10 @@ import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import com.dzungvu.models.Playlist
+import com.dzungvu.models.Song
+import com.dzungvu.utils.RealmHelper
+import io.realm.Realm
 import java.io.Serializable
 import java.util.concurrent.TimeUnit
 
@@ -33,6 +37,31 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private lateinit var mediaPlayer: MediaPlayer
     private var isMPInit = false
+    private lateinit var name: String
+
+    private var isShuffle = false
+    private var isRepeat = false
+    private var isRepeatOneSong = false
+
+    private lateinit var realm:Realm
+    private lateinit var realmHelper: RealmHelper
+
+    companion object {
+
+        private val SONGS_TAG = "song_tag"
+        private val NAME_TAG = "name_tag"
+        private val BUNDLE_TAG = "bundle_tag"
+
+        fun newInstance(playlist: Playlist): Intent {
+            val intent = Intent()
+            val bundle = Bundle()
+            bundle.putString(SONGS_TAG, playlist.songs)
+            bundle.putString(NAME_TAG, playlist.name)
+            intent.putExtra(BUNDLE_TAG, bundle)
+
+            return intent
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,7 +107,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private fun doPlaylist() {
 
-        val intent = Intent(this, SongListActivity::class.java)
+        val intent = Intent(this, PlaylistActivity::class.java)
         startActivityForResult(intent, GET_PLAY_LIST_CODE)
 
     }
@@ -117,7 +146,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
         } catch (e: UninitializedPropertyAccessException) {
             e.printStackTrace()
-            Toast.makeText(this, "Please select a song to play", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.please_select_a_song), Toast.LENGTH_LONG).show()
         }
 
     }
@@ -134,21 +163,45 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     }
 
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == GET_PLAY_LIST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
-                val song = data!!.getSerializableExtra("song")
-                playSong(song)
+                val bundle = data!!.getBundleExtra(BUNDLE_TAG)
+                name = bundle.getString(NAME_TAG)
+                val songs: String = bundle.getString(SONGS_TAG)
+                val playlist = getPlaylist(songs)
+                playPlaylist(playlist)
             }
         }
     }
 
-    private fun playSong(song: Serializable) {
-        val songNames = song.toString().split("/")
+    private fun getPlaylist(songs: String): ArrayList<Song>{
+        val arrSongId = songs.split(",")
+        var arrSong = ArrayList<Song>()
+        realm = Realm.getDefaultInstance()
+        realmHelper = RealmHelper(realm)
+        arrSong = realmHelper.findAllSongInList(arrSongId)
+        return arrSong
+    }
+
+    private fun playPlaylist(songs: ArrayList<Song>){
+
+        if (isShuffle){
+            Toast.makeText(this, "Suffle on", Toast.LENGTH_LONG).show()
+            playSong(songs[0])
+        }else{
+            Toast.makeText(this, "Shuffle off", Toast.LENGTH_LONG).show()
+            playSong(songs[0])
+        }
+    }
+
+    private fun playSong(song: Song) {
+        val songNames = song.uri.split("/")
         val songName = songNames[songNames.size - 1]
 
-        val uri = Uri.parse(song.toString())
+        val uri = Uri.parse(song.uri)
         if (isMPInit) {
             mediaPlayer.stop()
             mediaPlayer.release()
